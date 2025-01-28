@@ -13,20 +13,23 @@ def hello():
     typer.echo("Hello from Mogo!")
 
 @app.command()
-def list(direct: bool = typer.Option(False, "--direct", help="List only direct dependencies"),
-         indirect: bool = typer.Option(False, "--indirect", help="List only indirect dependencies")):
+def list(
+    direct: bool = typer.Option(False, "--direct", help="List only direct dependencies"),
+    indirect: bool = typer.Option(False, "--indirect", help="List only indirect dependencies"),
+    count: bool = typer.Option(False, "--count", help="Show the count of dependencies instead of listing them")
+):
     """
     List dependencies in the go.mod file. Supports filtering by direct and indirect dependencies.
     """
     go_mod_path = Path.cwd() / "go.mod"
-    
+
     if not go_mod_path.exists():
         typer.echo("Error: go.mod file not found in the current directory!")
         raise typer.Exit(code=1)
 
     with go_mod_path.open() as file:
         lines = file.readlines()
-    
+
     dependencies = []
     direct_dependencies = []
     indirect_dependencies = []
@@ -41,7 +44,7 @@ def list(direct: bool = typer.Option(False, "--direct", help="List only direct d
             continue
         if "require (" in line or ")" in line:
             continue
-        
+
         # Classify dependencies
         if line:
             if "// indirect" in line:
@@ -49,19 +52,25 @@ def list(direct: bool = typer.Option(False, "--direct", help="List only direct d
             else:
                 direct_dependencies.append(line)
 
-    # Default behavior: show all dependencies
+    # Determine which dependencies to process
     if not direct and not indirect:
         dependencies = direct_dependencies + indirect_dependencies
-        typer.echo("Dependencies found in go.mod:")
+        dependency_type = "Dependencies"
     elif direct:
         dependencies = direct_dependencies
-        typer.echo("Direct dependencies found in go.mod:")
+        dependency_type = "Direct dependencies"
     elif indirect:
         dependencies = indirect_dependencies
-        typer.echo("Indirect dependencies found in go.mod:")
+        dependency_type = "Indirect dependencies"
 
-    for dep in dependencies:
-        typer.echo(f"  {dep}")
+    # Display count or list of dependencies
+    if count:
+        typer.echo(f"{dependency_type} count: {len(dependencies)}")
+    else:
+        typer.echo(f"{dependency_type} found in go.mod:")
+        for dep in dependencies:
+            typer.echo(f"  {dep}")
+
 
 
 
